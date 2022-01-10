@@ -1,4 +1,5 @@
-var assert = require("assert")
+var assert = require("assert");
+const { Console } = require("console");
 // Given an array of numbers, return a new array so that positive and negative
 // numbers alternate. You can assume that 0 is a positive number. Within the
 // positive and negative numbers, you must keep their relative order. You are 
@@ -31,9 +32,47 @@ var assert = require("assert")
 // Explanation: Empty array...
 
 const altNumbers = (numArray) => {
-    // TODO: COMPLETE THIS FUNCTION
-    return [];
+    var positiveArray = [];
+    var negativeArray = [];
+    var numArrayLength = numArray.length;
+    // Check whether the number in the array is positive or negative 
+    // Then push to corresponding array to preserve the value order.
+    for (var i = 0; i < numArrayLength; i++) {      
+        (numArray[i] >= 0) ? positiveArray.push(numArray[i]) : 
+                             negativeArray.push(numArray[i]) ;
+    }
+
+    var altNumArray = [];
+    // Check if positive array is bigger or equal to the negative array
+    if ((positiveArray.length - negativeArray.length) >= 0) {
+        altNumArray = doSortArray(positiveArray, negativeArray);
+    } else { 
+        // Negative array is bigger or equal to our positive array
+        // since when the total length is even, it does not matter 
+        // whether our array starts with positive or negative, we pick
+        // the negative case. 
+        altNumArray = doSortArray(negativeArray, positiveArray);
+    }
+    
+    return altNumArray;
 }
+
+function doSortArray (biggerArray, smallerArray) {
+    var altNumArray = [];
+    var totalArrayLength = biggerArray.length + smallerArray.length;
+    for (var i = 0; i < totalArrayLength; i++) { 
+        if (i % 2) {
+            let valueToPush = smallerArray.shift();
+            altNumArray.push(valueToPush);
+        } else {
+            let valueToPush = biggerArray.shift();
+            altNumArray.push(valueToPush);
+        }
+    }
+    return altNumArray;
+}
+
+
 
 module.exports = { altNumbers } // Do not modify this line
 
