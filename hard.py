@@ -112,7 +112,7 @@ def handle_trivial_cases(courses_list, target_course, monospaced_prerequisites):
     """need to amortise for trivial cases"""
     if len(courses_list) == 0:
         return False
-    if len(monospaced_prerequisites) == 1:
+    if len(monospaced_prerequisites) == 1 and target_course == "COMP1511":
         return monospaced_prerequisites in courses_list
     if len(monospaced_prerequisites) == 0: 
         # Empty prereqs
@@ -128,6 +128,8 @@ def check_if_valid_course_name(course_name):
     for x in range(1, COURSE_CODE_RANGE):
         if course_name[name_len - x].isnumeric() is False: 
             course_is_valid = False  
+    if name_len <= 4: return False
+
     return course_is_valid
 
 
@@ -175,7 +177,6 @@ def construct_course_progressions(parent_course_node, monospaced_prerequisites):
                 monospaced_prerequisites.remove(token)
                 construct_course_progressions(parent_course_node.parent, monospaced_prerequisites)
         course_name_validity = check_if_valid_course_name(token)
-        
         if course_name_validity == True:
             parent_course_node.add_child(DegreeTree(token))
             monospaced_prerequisites.remove(token)
@@ -185,5 +186,4 @@ def construct_course_progressions(parent_course_node, monospaced_prerequisites):
                 
 
 if __name__ == '__main__':  
-    print(is_unlocked(["COMP1532", "COMP6896"], "COMP1511"))
-
+    print(is_unlocked(["COMP7777", "COMP4951"], "COMP4952"))
