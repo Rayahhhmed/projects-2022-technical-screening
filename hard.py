@@ -151,6 +151,7 @@ def break_list_by_brackets(degree_node, monospaced_prerequisites, index):
             temp_list.append(spliced_token)
             spliced_this_iteration = True
             monospaced_prerequisites.pop(monospaced_prerequisites.index(token))
+
             if count_brackets == 0: 
                 global list_containing_previous_bracketed_cases 
                 list_containing_previous_bracketed_cases = temp_list.copy()
@@ -187,6 +188,7 @@ def construct_course_progressions(parent_course_node, monospaced_prerequisites):
                 monospaced_prerequisites.remove(token)
                 list_to_destroy = monospaced_prerequisites.copy()
                 for courses_preceding in parent_course_node.get_children_courses():
+                    list_to_destroy = monospaced_prerequisites.copy()
                     if courses_preceding.name in list_containing_previous_bracketed_cases:
                         construct_course_progressions(courses_preceding, list_to_destroy)
             elif token == "OR": 
@@ -206,5 +208,6 @@ def construct_course_progressions(parent_course_node, monospaced_prerequisites):
             token = "COMP" + token
             parent_course_node.children.append(DegreeTree(token))
                 
+                
 if __name__ == '__main__':  
-    print(is_unlocked(["COMP1541", "COMP1521", "COMP1092"], "COMP1521"))
+    print(is_unlocked(["COMP1937", "DPST1012", "COMP2521"], "COMP3151"))
