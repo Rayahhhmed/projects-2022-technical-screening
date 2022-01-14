@@ -18,7 +18,7 @@ we will also consider many other criteria.
 """
 import json
 from os import name
-import re 
+
 
 "Constants and definitions"
 MONOSPACE = ' '
@@ -34,7 +34,6 @@ list_containing_previous_bracketed_cases = []
 with open("screening_for_subcom\projects-2022-technical-screening\conditions.json") as f:
     CONDITIONS = json.load(f)
     f.close()
-
 
 class DegreeTree: 
     def __init__(self, course_name):
@@ -64,6 +63,7 @@ class DegreeTree:
                     print("\n")
                     queue.append(child_course)
 
+
 def is_unlocked(courses_list, target_course):
     """Given a list of course codes a student has taken, return true if the target_course 
     can be unlocked by them.
@@ -88,32 +88,26 @@ def is_unlocked(courses_list, target_course):
                 - Only one prerequisite
                 - no course prereqs"""
 
-    flag_value = handle_trivial_cases(courses_list, target_course, monospaced_prerequisites)
+    flag_value = handle_trivial_cases(courses_list, monospaced_prerequisites)
     if flag_value is not NO_CASE_FLAG: 
         return flag_value
-    
-    #todo remove: 
-    print(monospaced_prerequisites)
-
-    
     parent_course_node = DegreeTree(target_course)
-    
     # Telling it basically to start the degree progression list from the start
     # with the string which is spliced to be neater. 
-
     construct_course_progressions(parent_course_node, monospaced_prerequisites)
-
-    parent_course_node.print_tree_bfs()
-
     return check_if_course_can_be_done(parent_course_node, courses_list, target_course, False)
 
 
-def handle_trivial_cases(courses_list, target_course, monospaced_prerequisites):    
+def handle_trivial_cases(courses_list, monospaced_prerequisites):    
     """need to amortise for trivial cases"""
+    
     if len(courses_list) == 0:
-        return False
-    if len(monospaced_prerequisites) == 1 and target_course == "COMP1511":
+        return True
+    if len(monospaced_prerequisites) == 1:
         return monospaced_prerequisites in courses_list
+    for courses in monospaced_prerequisites: 	
+        if "PRE" in courses:	
+            monospaced_prerequisites.pop(monospaced_prerequisites.index(courses))
     if len(monospaced_prerequisites) == 0: 
         # Empty prereqs
         return True
@@ -151,7 +145,6 @@ def break_list_by_brackets(degree_node, monospaced_prerequisites, index):
             temp_list.append(spliced_token)
             spliced_this_iteration = True
             monospaced_prerequisites.pop(monospaced_prerequisites.index(token))
-
             if count_brackets == 0: 
                 global list_containing_previous_bracketed_cases 
                 list_containing_previous_bracketed_cases = temp_list.copy()
@@ -164,7 +157,6 @@ def break_list_by_brackets(degree_node, monospaced_prerequisites, index):
         
         
 def check_if_course_can_be_done (degree_tree, courses_done, target_course, bool_course_dfs_found):
-    print(courses_done, target_course)
     if bool_course_dfs_found is True or not degree_tree.get_children_courses(): 
         return True
     
@@ -188,8 +180,9 @@ def construct_course_progressions(parent_course_node, monospaced_prerequisites):
                 monospaced_prerequisites.remove(token)
                 list_to_destroy = monospaced_prerequisites.copy()
                 for courses_preceding in parent_course_node.get_children_courses():
-                    list_to_destroy = monospaced_prerequisites.copy()
-                    if courses_preceding.name in list_containing_previous_bracketed_cases:
+                    if len(list_containing_previous_bracketed_cases) == 0: 
+                        construct_course_progressions(courses_preceding, list_to_destroy)
+                    elif courses_preceding.name in list_containing_previous_bracketed_cases:
                         construct_course_progressions(courses_preceding, list_to_destroy)
             elif token == "OR": 
                 "the code here is an \"OR\" "
@@ -208,6 +201,3 @@ def construct_course_progressions(parent_course_node, monospaced_prerequisites):
             token = "COMP" + token
             parent_course_node.children.append(DegreeTree(token))
                 
-                
-if __name__ == '__main__':  
-    print(is_unlocked(["COMP1937", "DPST1012", "COMP2521"], "COMP3151"))
