@@ -28,6 +28,7 @@ LB = '('
 RB = ')'
 UNITS_OF_CREDIT = 6
 NO_CASE_FLAG = 0x0F
+list_containing_previous_bracketed_cases = []
 
 # NOTE: DO NOT EDIT conditions.json
 with open("screening_for_subcom\projects-2022-technical-screening\conditions.json") as f:
@@ -52,15 +53,15 @@ class DegreeTree:
         self.children.remove(child)
 
     def get_children_courses(self):
-        return self.children
-
+        return self.children   
     def print_tree_bfs(self):
         queue = [self]
         while queue: 
             course_inspected = queue.pop(0)
-            print(course_inspected.name + " ")
+            print(course_inspected.name, end = " ")
             for child_course in course_inspected.children:
                 if child_course:
+                    print("\n")
                     queue.append(child_course)
 
 def is_unlocked(courses_list, target_course):
@@ -80,7 +81,6 @@ def is_unlocked(courses_list, target_course):
 
     # delimit string to list 
     CONDITIONS[target_course] = CONDITIONS[target_course].replace('.', '').replace(',', " OR").replace('.', '').upper()
-    #monospaced_prerequisites = MONOSPACE.join(CONDITIONS[target_course].split())
     monospaced_prerequisites = CONDITIONS[target_course].split()
     """ Amortising for trivial cases: 
         NOTE: Handles cases where: 
@@ -97,7 +97,7 @@ def is_unlocked(courses_list, target_course):
 
     
     parent_course_node = DegreeTree(target_course)
-   
+    
     # Telling it basically to start the degree progression list from the start
     # with the string which is spliced to be neater. 
 
@@ -128,23 +128,39 @@ def check_if_valid_course_name(course_name):
     for x in range(1, COURSE_CODE_RANGE):
         if course_name[name_len - x].isnumeric() is False: 
             course_is_valid = False  
-    if name_len <= 4: return False
+    if name_len <= COURSE_CODE_RANGE: return False
 
     return course_is_valid
 
 
-def check_subsequent_course_key_with_bracket(lo, monospaced_prerequisites):
+def break_list_by_brackets(degree_node, monospaced_prerequisites, index):
     count_brackets = 0
     temp_list = []
-    for x in range(lo, len(monospaced_prerequisites) - 1):
-        count_brackets += monospaced_prerequisites[x].count(LB)
-        count_brackets -= monospaced_prerequisites[x].count(RB)
-        monospaced_prerequisites[x].split()
-        monospaced_prerequisites[x].replace(LB, '')
-        monospaced_prerequisites[x].replace(RB, '')
-        temp_list.append(monospaced_prerequisites[x])
-        if count_brackets == 0:
-            return temp_list
+    spliced_this_iteration = False
+    for token in monospaced_prerequisites[index :]: 
+        if LB in token:
+            count_brackets += token.count(LB)
+            spliced_token = token.replace(LB, '')
+            monospaced_prerequisites.pop(monospaced_prerequisites.index(token))
+            temp_list.append(spliced_token)
+            spliced_this_iteration = True
+
+        if RB in token:
+            count_brackets -= token.count(RB)
+            spliced_token = token.replace(RB, '')
+            temp_list.append(spliced_token)
+            spliced_this_iteration = True
+            monospaced_prerequisites.pop(monospaced_prerequisites.index(token))
+            if count_brackets == 0: 
+                global list_containing_previous_bracketed_cases 
+                list_containing_previous_bracketed_cases = temp_list.copy()
+                construct_course_progressions(degree_node, temp_list)
+            
+        if spliced_this_iteration == False: 
+            temp_list.append(token)
+            monospaced_prerequisites.pop(monospaced_prerequisites.index(token))
+        spliced_this_iteration = False
+        
         
 def check_if_course_can_be_done (degree_tree, courses_done, target_course, bool_course_dfs_found):
     print(courses_done, target_course)
@@ -158,32 +174,37 @@ def check_if_course_can_be_done (degree_tree, courses_done, target_course, bool_
                                                                 target_course, bool_course_dfs_found)
 
     return bool_course_dfs_found
+
+
 def construct_course_progressions(parent_course_node, monospaced_prerequisites):
-    
     for token in monospaced_prerequisites:
         if LB in token or RB in token:
-           # new_sub_list = get_new_course_list_within_brackets(token, monospaced_prerequisites)
-            pass
+            break_list_by_brackets(parent_course_node, monospaced_prerequisites, monospaced_prerequisites.index(token))
+            break
         # Check if the thing has The operators or course codes
-        
         if token in LOGIC_OPERATIONS:
             if token == "AND":
                 monospaced_prerequisites.remove(token)
-                for courses_preceding in monospaced_prerequisites:
-                    if courses_preceding in parent_course_node.get_children():
-                        construct_course_progressions(courses_preceding, monospaced_prerequisites)
+                list_to_destroy = monospaced_prerequisites.copy()
+                for courses_preceding in parent_course_node.get_children_courses():
+                    if courses_preceding.name in list_containing_previous_bracketed_cases:
+                        construct_course_progressions(courses_preceding, list_to_destroy)
             elif token == "OR": 
                 "the code here is an \"OR\" "
                 monospaced_prerequisites.remove(token)
                 construct_course_progressions(parent_course_node.parent, monospaced_prerequisites)
+                break
         course_name_validity = check_if_valid_course_name(token)
+
         if course_name_validity == True:
             parent_course_node.add_child(DegreeTree(token))
+           # if token in monospaced_prerequisites:
             monospaced_prerequisites.remove(token)
+            construct_course_progressions(parent_course_node, monospaced_prerequisites)
+            break
         elif len(token) == COURSE_CODE_RANGE and token.isnumeric():
             token = "COMP" + token
             parent_course_node.children.append(DegreeTree(token))
                 
-
 if __name__ == '__main__':  
-    print(is_unlocked(["COMP7777", "COMP4951"], "COMP4952"))
+    print(is_unlocked(["COMP1541", "COMP1521", "COMP1092"], "COMP1521"))
