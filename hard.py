@@ -1,15 +1,14 @@
+
+   
 """
 Inside conditions.json, you will see a subset of UNSW courses mapped to their 
 corresponding text conditions. We have slightly modified the text conditions
 to make them simpler compared to their original versions.
-
 Your task is to complete the is_unlocked function which helps students determine 
 if their course can be taken or not. 
-
 We will run our hidden tests on your submission and look at your success rate.
 We will only test for courses inside conditions.json. We will also look over the 
 code by eye.
-
 NOTE: This challenge is EXTREMELY hard and we are not expecting anyone to pass all
 our tests. In fact, we are not expecting many people to even attempt this.
 For complete transparency, this is worth more than the easy challenge. 
@@ -18,6 +17,7 @@ we will also consider many other criteria.
 """
 import json
 from os import name
+from unicodedata import numeric
 
 
 "Constants and definitions"
@@ -71,7 +71,6 @@ def is_unlocked(courses_list, target_course):
     
     You do not have to do any error checking on the inputs and can assume that
     the target_course always exists inside conditions.json
-
     You can assume all courses are worth 6 units of credit"""
 
     """The design for checking if a person has done a particular source would be done with
@@ -101,14 +100,20 @@ def is_unlocked(courses_list, target_course):
 
 def handle_trivial_cases(courses_list, monospaced_prerequisites):    
     """need to amortise for trivial cases"""
-    
     if len(courses_list) == 0:
         return True
     if len(monospaced_prerequisites) == 1:
+        if len(monospaced_prerequisites[0]) == COURSE_CODE_RANGE and monospaced_prerequisites[0].isnumeric():
+            monospaced_prerequisites[0] = "COMP" + monospaced_prerequisites[0]
+        for tokens in courses_list:
+            if tokens == monospaced_prerequisites[0]:
+                return True
         return monospaced_prerequisites in courses_list
+
     for courses in monospaced_prerequisites: 	
         if "PRE" in courses:	
             monospaced_prerequisites.pop(monospaced_prerequisites.index(courses))
+
     if len(monospaced_prerequisites) == 0: 
         # Empty prereqs
         return True
@@ -146,11 +151,15 @@ def break_list_by_brackets(degree_node, monospaced_prerequisites, index):
             temp_list.append(spliced_token)
             spliced_this_iteration = True
             monospaced_prerequisites.pop(monospaced_prerequisites.index(token))
-            if count_brackets == 0: 
-                global list_containing_previous_bracketed_cases 
-                list_containing_previous_bracketed_cases = temp_list.copy()
-                construct_course_progressions(degree_node, temp_list)
+            dummy_var = DegreeTree("dmmy0")
+            construct_course_progressions(dummy_var, temp_list)
+            temp_list.clear() 
+            degree_node.children += dummy_var.children
             
+
+            if count_brackets == 0: 
+                construct_course_progressions(degree_node, temp_list)
+
         if spliced_this_iteration == False: 
             temp_list.append(token)
             monospaced_prerequisites.pop(monospaced_prerequisites.index(token))
@@ -179,26 +188,18 @@ def construct_course_progressions(parent_course_node, monospaced_prerequisites):
         if token in LOGIC_OPERATIONS:
             if token == "AND":
                 monospaced_prerequisites.remove(token)
-                list_to_destroy = monospaced_prerequisites.copy()
-                for courses_preceding in parent_course_node.get_children_courses():
-                    if len(list_containing_previous_bracketed_cases) == 0: 
-                        construct_course_progressions(courses_preceding, list_to_destroy)
-                    elif courses_preceding.name in list_containing_previous_bracketed_cases:
-                        construct_course_progressions(courses_preceding, list_to_destroy)
+                for child_courses in parent_course_node.children:
+                    construct_course_progressions(child_courses, monospaced_prerequisites)
             elif token == "OR": 
                 "the code here is an \"OR\" "
                 monospaced_prerequisites.remove(token)
                 construct_course_progressions(parent_course_node.parent, monospaced_prerequisites)
                 break
         course_name_validity = check_if_valid_course_name(token)
-
         if course_name_validity == True:
             parent_course_node.add_child(DegreeTree(token))
-           # if token in monospaced_prerequisites:
             monospaced_prerequisites.remove(token)
             construct_course_progressions(parent_course_node, monospaced_prerequisites)
             break
-        elif len(token) == COURSE_CODE_RANGE and token.isnumeric():
-            token = "COMP" + token
-            parent_course_node.children.append(DegreeTree(token))
+        
                 
